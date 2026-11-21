@@ -1,0 +1,13 @@
+node_modules/
+.venv/
+venv/
+.next/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+*.db

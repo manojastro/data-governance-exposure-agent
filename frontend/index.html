@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data Access Governance Agent</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark"></span>
+    <div>
+      <h1>Data Access Governance &amp; Exposure Agent</h1>
+      <p class="subtitle">Who can access sensitive data &middot; why &middot; should they still have it &middot; smallest safe change</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="mock-badge" class="badge badge-mock hidden">MOCK MODE</span>
+    <span id="llm-badge" class="badge badge-dim">LLM: -</span>
+    <span id="health-dot" class="health-dot" title="checking"></span>
+    <span id="db-label" class="dim">db: -</span>
+  </div>
+</header>
+
+<section class="controls">
+  <button id="btn-seed" class="btn">Seed estate</button>
+  <button id="btn-scan" class="btn">Discovery scan</button>
+  <button id="btn-investigate" class="btn btn-primary">Run investigation</button>
+  <select id="inv-select" class="select"><option value="">investigation: none</option></select>
+  <span id="inv-status" class="chip chip-idle">idle</span>
+  <label class="auto-label"><input type="checkbox" id="auto-refresh" checked> auto-refresh</label>
+  <span id="toast" class="toast hidden"></span>
+</section>
+
+<main class="grid">
+
+  <!-- row 1 -->
+  <section class="panel span-12" id="panel-overview">
+    <h2>Governance overview</h2>
+    <div id="kpis" class="kpi-row"><div class="dim pad">loading...</div></div>
+    <div class="cov-row">
+      <div class="cov"><label>classification coverage</label><div class="bar"><i id="cov-class"></i></div><b id="cov-class-v">-</b></div>
+      <div class="cov"><label>policy baseline coverage</label><div class="bar"><i id="cov-policy"></i></div><b id="cov-policy-v">-</b></div>
+    </div>
+  </section>
+
+  <!-- row 2 -->
+  <section class="panel span-7" id="panel-findings">
+    <h2>Anomalies <span class="dim" id="findings-count"></span></h2>
+    <div class="filter-row">
+      <select id="finding-sev" class="select">
+        <option value="">all severities</option>
+        <option value="critical">critical</option>
+        <option value="high">high</option>
+        <option value="medium">medium</option>
+        <option value="low">low</option>
+      </select>
+      <select id="finding-status" class="select">
+        <option value="open">open</option>
+        <option value="">any status</option>
+        <option value="remediated">remediated</option>
+      </select>
+    </div>
+    <div class="scroll-y"><table class="tbl" id="findings-table">
+      <thead><tr><th>sev</th><th>type</th><th>principal / asset</th><th>title</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel span-5" id="panel-highrisk">
+    <h2>High-risk permissions</h2>
+    <div class="scroll-y"><table class="tbl" id="highrisk-table">
+      <thead><tr><th>kind</th><th>subject</th><th>detail</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <!-- row 3 -->
+  <section class="panel span-7" id="panel-graph">
+    <h2>Access graph <span class="dim" id="graph-meta"></span></h2>
+    <div id="graph-wrap" class="graph-wrap"></div>
+    <p class="legend">
+      <i class="sw sw-user"></i>identity <i class="sw sw-share"></i>share
+      <i class="sw sw-asset"></i>sensitive asset <i class="edge-sample risky"></i>risky edge
+      <i class="edge-sample"></i>grant edge
+    </p>
+  </section>
+
+  <section class="panel span-5" id="panel-agents">
+    <h2>AI agent identities <span class="dim" id="agents-count"></span></h2>
+    <div class="scroll-y" id="agents-list"><div class="dim pad">loading...</div></div>
+  </section>
+
+  <!-- row 4 -->
+  <section class="panel span-5" id="panel-inventory">
+    <h2>Sensitive data inventory <span class="dim" id="assets-count"></span></h2>
+    <input id="asset-q" class="input" type="search" placeholder="search dataset or tag (e.g. email, salary)...">
+    <div class="scroll-y"><table class="tbl" id="assets-table">
+      <thead><tr><th>dataset</th><th>level</th><th>tags</th><th>masked</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel span-4" id="panel-shares">
+    <h2>External &amp; public shares</h2>
+    <div class="scroll-y"><table class="tbl" id="shares-table">
+      <thead><tr><th>share</th><th>dataset</th><th>recipient</th><th>state</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel span-3" id="panel-lineage">
+    <h2>Data lineage</h2>
+    <div id="lineage-wrap" class="graph-wrap small"></div>
+  </section>
+
+  <!-- row 5 -->
+  <section class="panel span-6" id="panel-proposals">
+    <h2>Proposed changes <span class="dim" id="proposals-count"></span></h2>
+    <div class="scroll-y"><table class="tbl" id="proposals-table">
+      <thead><tr><th>signature</th><th>risk</th><th>status</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <div class="queue-actions">
+      <span id="pending-approval" class="dim">no pending approval</span>
+      <input id="approver" class="input slim" value="security_lead" title="approver name">
+      <button id="btn-approve" class="btn btn-ok">Approve + apply</button>
+      <button id="btn-reject" class="btn btn-danger">Reject</button>
+    </div>
+  </section>
+
+  <section class="panel span-6" id="panel-validation">
+    <h2>Shadow validation &amp; legitimate-access suite</h2>
+    <div id="validation-latest" class="verdict-box dim">no validation yet</div>
+    <div class="scroll-y short"><table class="tbl" id="legit-table">
+      <thead><tr><th>legitimate workflow</th><th>principal</th><th>access</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+  <!-- row 6 -->
+  <section class="panel span-6" id="panel-events">
+    <h2>Audit evidence &middot; event log</h2>
+    <div class="scroll-y" id="events-list"><div class="dim pad">loading...</div></div>
+  </section>
+
+  <section class="panel span-6" id="panel-tools">
+    <h2>Audit evidence &middot; agent tool calls <span class="dim" id="tools-note"></span></h2>
+    <div class="scroll-y"><table class="tbl" id="toolcalls-table">
+      <thead><tr><th>tool</th><th>caller</th><th>risk</th><th>status</th><th>ms</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  All data synthetic. LLM narrates facts only; detection, minimality and validation are deterministic.
+  Applying changes requires human approval; failed post-apply verification auto-rollbacks.
+</footer>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>

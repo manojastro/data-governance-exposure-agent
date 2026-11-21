@@ -1,0 +1,166 @@
+{
+  "version": "1.0",
+  "description": "Planted violation scenarios in simulator/generate_estate.py (seed=42). Signatures follow the change-signature grammar: revoke_grant:principal|asset|privilege, grant_access:principal|asset|privilege, mask_column:fqn:column, restrict_share:name:..., classify_dataset:fqn:tags=...",
+  "thresholds": {
+    "detection_recall": 1.0,
+    "detection_precision": 1.0,
+    "minimality_exact_ratio": 1.0,
+    "legitimacy_preserved": true
+  },
+  "scenarios": [
+    {
+      "key": "orphaned_grant_jdoe_contractor_finance_gl_lines_read",
+      "planted": "grant referencing deleted contractor user jdoe_contractor",
+      "expected_type": "ORPHANED_GRANT",
+      "expected_minimal_signatures": [
+        "revoke_grant:jdoe_contractor|finance.gl_lines|read"
+      ]
+    },
+    {
+      "key": "overprivileged_role_finance_analyst_role_hr_ALL_read",
+      "planted": "Finance Analyst role granted entire HR schema; only needs vw_salary_aggregate",
+      "expected_type": "OVERPRIVILEGED_ROLE",
+      "expected_minimal_signatures": [
+        "revoke_grant:finance_analyst_role|hr.*|read",
+        "grant_access:finance_analyst_role|hr.vw_salary_aggregate|read"
+      ]
+    },
+    {
+      "key": "service_account_overaccess_svc_etl",
+      "planted": "etl service account holds hr/sales/marketing reads beyond declared scope",
+      "expected_type": "SERVICE_ACCOUNT_OVERACCESS",
+      "expected_minimal_signatures": [
+        "revoke_grant:svc_etl|hr.*|read",
+        "revoke_grant:svc_etl|sales.*|read",
+        "revoke_grant:svc_etl|marketing.*|read"
+      ]
+    },
+    {
+      "key": "ai_agent_scope_violation_support_copilot",
+      "planted": "support copilot AI agent reaches HR/finance/sales/analytics far beyond declared task",
+      "expected_type": "AI_AGENT_SCOPE_VIOLATION",
+      "expected_minimal_signatures": [
+        "revoke_grant:support_copilot|sales.customers|read",
+        "revoke_grant:support_copilot|hr.employees|read",
+        "revoke_grant:support_copilot|finance.invoices|read",
+        "revoke_grant:support_copilot|analytics.*|query",
+        "revoke_grant:support_copilot|analytics.mart_customer_360|write"
+      ]
+    },
+    {
+      "key": "ai_agent_scope_violation_revenue_analyst_agent",
+      "planted": "revenue agent reads sales.orders and raw HR employees beyond declared daily_sales scope",
+      "expected_type": "AI_AGENT_SCOPE_VIOLATION",
+      "expected_minimal_signatures": [
+        "revoke_grant:revenue_analyst_agent|sales.orders|read",
+        "revoke_grant:revenue_analyst_agent|hr.employees|read"
+      ]
+    },
+    {
+      "key": "sod_conflict_henry_adams_create_payment_approve_payment",
+      "planted": "henry_adams can both create and approve payments (SoD pair)",
+      "expected_type": "SOD_CONFLICT",
+      "expected_minimal_signatures": [
+        "revoke_grant:payroll_approvers|finance.payments|approve_payment"
+      ]
+    },
+    {
+      "key": "stale_elevated_bob_manager_analytics_mart_fin_summary_admin",
+      "planted": "admin privilege unused for 180 days",
+      "expected_type": "STALE_ELEVATED_ACCESS",
+      "expected_minimal_signatures": [
+        "revoke_grant:bob_manager|analytics.mart_fin_summary|admin"
+      ]
+    },
+    {
+      "key": "stale_carol_reed_sales_orders_read",
+      "planted": "plain read access unused 150 days (>90-day cutoff)",
+      "expected_type": "STALE_ACCESS",
+      "expected_minimal_signatures": [
+        "revoke_grant:carol_reed|sales.orders|read"
+      ]
+    },
+    {
+      "key": "stale_elevated_grace_park_finance_restricted_ledger_share",
+      "planted": "unused CAN_SHARE elevated permission on restricted ledger (200 days)",
+      "expected_type": "STALE_ELEVATED_ACCESS",
+      "expected_minimal_signatures": [
+        "revoke_grant:grace_park|finance.restricted_ledger|share"
+      ]
+    },
+    {
+      "key": "public_share_on_sensitive_company_wide_directory",
+      "planted": "public/unrestricted share on PII-bearing HR directory",
+      "expected_type": "PUBLIC_SHARE_ON_SENSITIVE",
+      "expected_minimal_signatures": [
+        "restrict_share:company_wide_directory:recipient=hr_business_partners"
+      ]
+    },
+    {
+      "key": "external_share_restricted_partner_northwind_share",
+      "planted": "external partner share of restricted exec-comp ledger",
+      "expected_type": "EXTERNAL_SHARE_RESTRICTED",
+      "expected_minimal_signatures": [
+        "restrict_share:partner_northwind_share:status=revoked"
+      ]
+    },
+    {
+      "key": "credential_exposure_finance_analysts_ops_etl_config",
+      "planted": "credential-like strings readable by finance_analysts group",
+      "expected_type": "CREDENTIAL_EXPOSURE",
+      "expected_minimal_signatures": [
+        "revoke_grant:finance_analysts|ops.etl_config|read"
+      ]
+    },
+    {
+      "key": "unmasked_pii_via_hr_vw_employee_directory",
+      "planted": "view re-exposes base-table PII columns without masking policies",
+      "expected_type": "UNMASKED_PII_EXPOSURE",
+      "expected_minimal_signatures": [
+        "mask_column:hr.vw_employee_directory:email",
+        "mask_column:hr.vw_employee_directory:phone"
+      ]
+    },
+    {
+      "key": "policy_drift_support_agents_sales_orders_read",
+      "planned_note": "internal-target drift stays POLICY_DRIFT (medium)",
+      "expected_type": "POLICY_DRIFT",
+      "expected_minimal_signatures": [
+        "revoke_grant:support_agents|sales.orders|read"
+      ]
+    },
+    {
+      "key": "policy_drift_marketing_team_sales_customers_write",
+      "planned_note": "drift onto PII-bearing dataset escalates to OVERBROAD_GRANT (high)",
+      "expected_type": "OVERBROAD_GRANT",
+      "expected_minimal_signatures": [
+        "revoke_grant:marketing_team|sales.customers|write"
+      ]
+    },
+    {
+      "key": "missing_classification_ops_etl_config",
+      "expected_type": "MISSING_CLASSIFICATION",
+      "expected_minimal_signatures": [
+        "classify_dataset:ops.etl_config:tags=credential_like"
+      ]
+    },
+    {
+      "key": "missing_classification_s3___acme_lake_raw_hr_exports_employees_jsonl",
+      "expected_type": "MISSING_CLASSIFICATION",
+      "expected_minimal_signatures": [
+        "classify_dataset:s3://acme-lake/raw/hr_exports/employees.jsonl:tags=email,employee_id,salary"
+      ]
+    }
+  ],
+  "negative_guards": {
+    "description": "Seeded negatives that must NOT be flagged (precision guards)",
+    "items": [
+      "dave_kim support.tickets read used 10 days ago - fresh",
+      "payroll_approvers approve_payment used 120 days ago - consumed by SoD detector, never double-flagged as stale",
+      "public share on analytics.daily_sales (public-level dataset)",
+      "internal share sales_customers_internal to marketing_team",
+      "curated parquet file has dataset-level classification",
+      "data_engineers access to ops.etl_config (expected audience)"
+    ]
+  }
+}
